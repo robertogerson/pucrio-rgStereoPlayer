@@ -19,25 +19,36 @@ anaglyph_handle *anaglyph_new_handle ( int width, int height,
   config->drawSceneFunc = drawSceneFunc;
 
   config->anaglyph_method = ANAGLYPH_OFF_AXIS;
-//  config->anaglyph_method = ANAGLYPH_TOE_IN;
+  config->anaglyph_method = ANAGLYPH_TOE_IN;
 }
 
 void anaglyph_draw_toein(const anaglyph_handle *config)
 {
-  glDrawBuffer(GL_BACK); /* draw into both back buffers */
+  /* I just need do this when change the viewport */
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective( config->fovy,
+                  config->screen_width/config->screen_height, 
+                  0.1,
+                  10000.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
   
+  glDrawBuffer(GL_BACK); /* draw into both back buffers */
   /* clear color and depth buffers*/
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glDrawBuffer(GL_BACK_LEFT); /* draw into back left buffer */
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity(); /* reset modelview matrix */
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   gluLookAt(  (-1)*config->IOD/2, /* set camera position  x=-IOD/2 */
               0.0,            /*                      y=0.0 */
               0.0,            /*                      z=0.0 */
               0.0,            /*set camera "look at"  x=0.0 */
               0.0,            /*                      y=0.0 */
-              config->screenZ,/*                      z=screenplane */
+              (-1)*config->screenZ,/*                      z=screenplane */
               0.0,            /* set camera up vector x=0.0 */
               1.0,            /*                      y=1.0 */
               0.0);           /*                      z=0.0 */
@@ -50,15 +61,17 @@ void anaglyph_draw_toein(const anaglyph_handle *config)
     config->drawSceneFunc();
   }
   glPopMatrix();
+
   glDrawBuffer(GL_BACK_RIGHT);  /* draw into back right buffer */
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();             /* reset modelview matrix */
+  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   gluLookAt( config->IOD/2,
              0.0,
              0.0,
              0.0,
              0.0,
-             config->screenZ, /* as for left buffer with camera position at: */
+             (-1)*config->screenZ, /* as for left buffer with camera position at: */
              0.0,
              1.0,
              0.0);   /*                     (IOD/2, 0.0, 0.0) */

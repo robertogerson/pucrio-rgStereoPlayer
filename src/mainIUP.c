@@ -39,7 +39,7 @@ Ihandle *canvas;            /* OpengGL canvas */
 anaglyph_handle *anaglyph;
 
 int width = 800, height = 600;
-int speed = 1;
+int speed = 0;
 GLdouble angle = 0.0;
 
 int exit_cb(void)
@@ -53,15 +53,15 @@ int exit_cb(void)
 
 void drawScene (void)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPushMatrix();  /* saves current model view in a stack */
-      glTranslatef( 0.0f, 0.0f , 0.0f );
-      glScalef( 1.0f, 1.0f, 1.0f );
-      glRotatef(angle, 0, 1, 0);
-/*    colorCube(); */
-      MakeBox();
-//      MakeSphere();
-    glPopMatrix();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glPushMatrix();  /* saves current model view in a stack */
+    //glTranslatef( 0.0f, 0.0f , 0.0f );
+    //glScalef( 1.0f, 1.0f, 1.0f );
+    glRotatef(angle, 0, 1, 0);
+ // colorCube();
+    MakeBox();
+//    MakeSphere();
+  glPopMatrix();
  
 }
 
@@ -81,11 +81,13 @@ int rotating_valuechanged_cb(Ihandle *ih)
 int repaint_cb(Ihandle *self)
 {
   IupGLMakeCurrent(self); /* Make self the current GL Context */
+ 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  /* White */
-  glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
   anaglyph_draw(anaglyph);
-  IupGLSwapBuffers(self);  /* change the back buffer with the front buffer */
 
+  IupGLSwapBuffers(self);  /* change the back buffer with the front buffer */
   return IUP_DEFAULT; /* returns the control to the main loop */
 }
 
@@ -124,14 +126,16 @@ int resize_cb(Ihandle *self, int new_width, int new_height)
   /* define the entire canvas as the viewport  */
   glViewport(0, 0, new_width, new_height);
 
+  /* projection transformation (orthographic in the xy plane) */
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  gluPerspective(45, new_width/new_height, 1.0, 30.0);
+  
   /* transformation applied to each vertex */
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();           /* identity, i. e. no transformation */
 
-  /* projection transformation (orthographic in the xy plane) */
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  
   /* update canvas size and repaint */
   width = new_width;
   height = new_height;
