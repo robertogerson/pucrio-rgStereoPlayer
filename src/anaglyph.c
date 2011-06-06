@@ -19,7 +19,7 @@ anaglyph_handle *anaglyph_new_handle ( int width, int height,
   config->drawSceneFunc = drawSceneFunc;
 
   config->anaglyph_method = ANAGLYPH_OFF_AXIS;
-  config->anaglyph_method = ANAGLYPH_TOE_IN;
+//  config->anaglyph_method = ANAGLYPH_TOE_IN;
 }
 
 void anaglyph_draw_toein(const anaglyph_handle *config)

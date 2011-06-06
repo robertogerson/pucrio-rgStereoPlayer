@@ -180,7 +180,7 @@ void drawScene (void)
 //    glScalef( 1.0f, 1.0f, 1.0f );
 /*    glRotatef(t,0,0,1); */
 /*    colorCube(); */
-      MakeBox();
+/*      MakeBox(); */
       MakeSphere();
 /*  glPopMatrix(); */
  
