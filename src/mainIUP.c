@@ -29,21 +29,18 @@
 #endif /* WIN32 */
 
 #include "anaglyph.h"
+#include "geometry.h"
 
 Ihandle *mainDlg;           /* Main Window */
 Ihandle *controlsFrm;          /* Controls over canvas */
 Ihandle *canvas;            /* OpengGL canvas */
 
+
 anaglyph_handle *anaglyph;
 
-typedef struct {
-   double x,y,z;
-} XYZ;
-#define TWOPI           6.283185307179586476925287
-#define PI              3.141592653589793238462643
-#define PID2            1.570796326794896619231322
-
 int width = 800, height = 600;
+int speed = 1;
+GLdouble angle = 0.0;
 
 int exit_cb(void)
 {
@@ -54,143 +51,33 @@ int exit_cb(void)
   return IUP_CLOSE;
 }
 
-static void polygon(int a, int b, int c, int d)
-{
-  double vertices[][3]={{-1,-1, 1}, {-1, 1, 1}, { 1, 1, 1}, { 1,-1, 1},
-                        {-1,-1,-1}, {-1, 1,-1}, { 1, 1,-1}, { 1,-1,-1}};
-  glBegin(GL_POLYGON);
-    glVertex3dv(vertices[a]);
-    glVertex3dv(vertices[b]);
-    glVertex3dv(vertices[c]);
-    glVertex3dv(vertices[d]);
-  glEnd();
-}
-
-static void colorCube(void)
-{
-  glColor3f(1,0,0);
-  glNormal3f(1,0,0);
-  polygon(2,3,7,6);
-           
-  glColor3f(0,1,0);
-  glNormal3f(0,1,0);
-  polygon(1,2,6,5);
-                    
-  glColor3f(0,0,1);
-  glNormal3f(0,0,1);
-  polygon(0,3,2,1);
-  
-  glColor3f(1,0,1);
-  glNormal3f(0,-1,0);
-  polygon(3,0,4,7);
-                                      
-  glColor3f(1,1,0);
-  glNormal3f(0,0,-1);
-  polygon(4,5,6,7);
-
-  glColor3f(0,1,1);
-  glNormal3f(-1,0,0);
-  polygon(5,4,0,1);
-}
-
-/* 
- * Create the geometry for a wireframe box
- */
-void MakeBox(void)
-{
-  XYZ pmin = {-2,-2,-2}, pmax = {2, 2, 2};
-
-  glColor3f(1.0, 1.0, 1.0);
-  glBegin(GL_LINE_STRIP);
-  {
-    glVertex3f(pmin.x, pmin.y,pmin.z);
-    glVertex3f(pmax.x, pmin.y,pmin.z);
-    glVertex3f(pmax.x, pmin.y,pmax.z);
-    glVertex3f(pmin.x, pmin.y,pmax.z);
-    glVertex3f(pmin.x, pmin.y,pmin.z);
-    glVertex3f(pmin.x, pmax.y,pmin.z);
-    glVertex3f(pmax.x, pmax.y,pmin.z);
-    glVertex3f(pmax.x, pmax.y,pmax.z);
-    glVertex3f(pmin.x, pmax.y,pmax.z);
-    glVertex3f(pmin.x, pmax.y,pmin.z);
-  }
-  glEnd();
-  
-  glBegin(GL_LINES);
-  glVertex3f(pmax.x,pmin.y,pmin.z); glVertex3f(pmax.x,pmax.y,pmin.z);
-  glEnd();
-  glBegin(GL_LINES);
-  glVertex3f(pmax.x,pmin.y,pmax.z); glVertex3f(pmax.x,pmax.y,pmax.z);
-  glEnd();
-  glBegin(GL_LINES);
-  glVertex3f(pmin.x,pmin.y,pmax.z); glVertex3f(pmin.x,pmax.y,pmax.z);
-  glEnd();
-}
-
-/*
- * Create the geometry for a sphere
- */
-void MakeSphere(void)
-{
-   int i,j,n=32;
-   double t1,t2,t3,r=3;
-   XYZ e,p,c={0,0,0};
-
-   glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-   glColor3f(1.0,1.0,1.0);
-   for (j=0;j<n/2;j++) {
-      t1 = -PID2 + j * PI / (n/2);
-      t2 = -PID2 + (j + 1) * PI / (n/2);
-
-      glBegin(GL_QUAD_STRIP);
-      for (i=0;i<=n;i++) {
-         t3 = i * TWOPI / n;
-
-         e.x = cos(t1) * cos(t3);
-         e.y = sin(t1);
-         e.z = cos(t1) * sin(t3);
-         p.x = c.x + r * e.x;
-         p.y = c.y + r * e.y;
-         p.z = c.z + r * e.z;
-         glNormal3f(e.x,e.y,e.z);
-         glTexCoord2f(i/(double)n,2*j/(double)n);
-         glVertex3f(p.x,p.y,p.z);
-
-         e.x = cos(t2) * cos(t3);
-         e.y = sin(t2);
-         e.z = cos(t2) * sin(t3);
-         p.x = c.x + r * e.x;
-         p.y = c.y + r * e.y;
-         p.z = c.z + r * e.z;
-
-         glNormal3f(e.x,e.y,e.z);
-         glTexCoord2f(i/(double)n,2*(j+1)/(double)n);
-         glVertex3f(p.x,p.y,p.z);
-
-      }
-      glEnd();
-   }
-}
-
 void drawScene (void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-/*  glPushMatrix();  saves current model view in a stack */
-//    glTranslatef( 0.0f, 0.0f , 0.0f );
-//    glScalef( 1.0f, 1.0f, 1.0f );
-/*    glRotatef(t,0,0,1); */
+    glPushMatrix();  /* saves current model view in a stack */
+      glTranslatef( 0.0f, 0.0f , 0.0f );
+      glScalef( 1.0f, 1.0f, 1.0f );
+      glRotatef(angle, 0, 1, 0);
 /*    colorCube(); */
-/*      MakeBox(); */
-      MakeSphere();
-/*  glPopMatrix(); */
+      MakeBox();
+//      MakeSphere();
+    glPopMatrix();
  
 }
 
+/* Callback called when the user wants to change the Interocular Distance */
 int iod_valuechanged_cb(Ihandle *ih)
 {
   anaglyph->IOD =  IupGetFloat(ih, IUP_VALUE);
 }
 
+/* Callback called when the user wants to stop/start the rotation */
+int rotating_valuechanged_cb(Ihandle *ih)
+{
+  speed = IupGetInt(ih, IUP_VALUE);
+}
+
+/* Callback to repaint the canvas */
 int repaint_cb(Ihandle *self)
 {
   IupGLMakeCurrent(self); /* Make self the current GL Context */
@@ -204,9 +91,26 @@ int repaint_cb(Ihandle *self)
 
 int idle_cd(void)
 {
-//  t += 1;
+  angle += speed;
   repaint_cb(canvas);
   return IUP_DEFAULT; /* return to the IUP main loop */
+}
+
+/* Prevents the control window from being closed */
+int controls_close_cb(Ihandle *ih)
+{
+  return IUP_IGNORE;
+}
+
+/* Prevents the control window from being closed */
+int rendertype_valuechanged_cb(Ihandle *ih)
+{
+  int type = IupGetInt(ih, IUP_VALUE);
+  if(type)
+    anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
+  else
+    anaglyph->anaglyph_method = ANAGLYPH_TOE_IN;
+  return IUP_DEFAULT;
 }
 
 /* 
@@ -238,55 +142,75 @@ int resize_cb(Ihandle *self, int new_width, int new_height)
 
 Ihandle *createFrmControls()
 {
-  Ihandle *frm, *vbox, *anag,
+  Ihandle *frm, *vbox, *anag_toein, *anag_offaxis,
           *renderTypeFrm,
           *topbottom, *sidebyside, *renderType,
-          *iod_v;
+          *iod_v,
+          *rotating_control;
 
-  anag = IupToggle ("&Anaglyph", ""),
+  anag_offaxis = IupToggle ("&Anaglyph (offaxis)", ""),
+  anag_toein = IupToggle ("&Anaglyph (Toe-in)", ""),
   topbottom = IupToggle ("&Top/Bottom", ""),
   sidebyside = IupToggle ("&Side-by-side", ""),
 
   renderType = IupRadio (
     IupVbox (
-      anag,
+      anag_offaxis,
+      anag_toein,
       topbottom,
       sidebyside,
       NULL
     )
   );
 
-  IupSetHandle("anaglyph", anag);
+  IupSetHandle("anaglyph_offaxis", anag_offaxis);
+  IupSetHandle("anaglyph_toein", anag_toein);
   IupSetHandle("topbottom", topbottom);
   IupSetHandle("sidebyside", sidebyside);
 
-  IupSetAttribute(renderType, "VALUE", "anaglyph");
-  IupSetAttribute(anag, "TIP",   "Two state button - Exclusive - RADIO");
+  IupSetAttribute(renderType, "VALUE", "anaglyph_offaxis");
+  IupSetAttribute(anag_offaxis, "TIP",   "Two state button - Exclusive - RADIO");
+  IupSetAttribute(anag_toein, "TIP",   "Two state button - Exclusive - RADIO");
   IupSetAttribute(topbottom, "TIP",   "Two state button - Exclusive - RADIO");
   IupSetAttribute(sidebyside, "TIP",   "Two state button - Exclusive - RADIO");
+  IupSetCallback(anag_offaxis, "VALUECHANGED_CB", (Icallback)rendertype_valuechanged_cb);
 
   renderTypeFrm = IupFrame( renderType );
   IupSetAttribute (renderTypeFrm, "TITLE", "RenderType");
-
   
   iod_v = IupVal("Horizontal");
   IupSetCallback(iod_v, "VALUECHANGED_CB",  (Icallback)iod_valuechanged_cb);
   IupSetAttribute(iod_v, "MIN", "-3.0");
   IupSetAttribute(iod_v, "MAX", "5.0");
+  IupSetAttribute (iod_v, "VALUE", "0.5");
+
+  rotating_control = IupToggle("Rotating", "");
+  IupSetCallback(rotating_control, "VALUECHANGED_CB", (Icallback) rotating_valuechanged_cb);
+  IupSetAttribute (rotating_control, "VALUE", "ON");
 
   vbox = IupVbox
   (
     IupFill(),
     renderTypeFrm,
     IupFill(),
-    iod_v,
+    rotating_control,
+    IupSetAttributes(IupHbox
+      (
+        IupLabel("Interocular Distance:"),
+        iod_v,
+        NULL
+      ), "ALIGNMENT=ACENTER"
+    ),
     IupButton ("A&bout", ""),
     NULL
   );
   
   frm = IupDialog (vbox);
-  IupSetAttributes(frm, "SIZE=100, TITLE=RGStereoPlayer Controls, \
-                        RESIZE=NO, MINBOX=NO, MAXBOX=NO");
+  IupSetAttributes(frm, "TITLE=RGStereoPlayer Controls, \
+                        MINBOX=NO, MAXBOX=NO");
+
+  IupSetCallback( frm, "CLOSE_CB", (Icallback) controls_close_cb);
+
   return frm;
 }
 
