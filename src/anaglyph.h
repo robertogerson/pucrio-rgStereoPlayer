@@ -1,0 +1,75 @@
+#ifndef RG_ANAGLYPH
+#define RG_ANAGLYPH
+
+/* Standard libraries */
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+/* OpenGL libraries */
+#ifdef WIN32
+  #include <windows.h>
+  #include <gl/gl.h>
+  #include <gl/glu.h>
+#else
+  #include <GL/gl.h>
+  #include <GL/glu.h>
+#endif
+
+#define DTR 0.0174532925
+
+enum ANAGLYPH_METHOD {
+  ANAGLYPH_TOE_IN = 0, /* Enable the anaglyph toe-in projection method. */
+  ANAGLYPH_OFF_AXIS    /* Enabe the anaglyph Off-axis projection  method.*/
+};
+
+typedef struct
+{
+  GLdouble leftFrustum;
+  GLdouble rightFrustum;
+  GLdouble bottomFrustum;
+  GLdouble topFrustum;
+  GLdouble modelTranslation;
+} camera;
+
+typedef struct 
+{
+  float depthZ;    
+
+  double fovy;      /* Field of view in y-axis */
+  double nearZ;     /* near clipping plane */
+  double farZ;      /* far clipping plane */
+  double screenZ;   /* screen projection plane */
+  double IOD; /* intraocular distance */
+
+  double screen_width;
+  double screen_height;
+
+  void (*drawSceneFunc) (void);
+  ANAGLYPH_METHOD anaglyph_method;
+
+  camera leftCam, rightCam;
+} anaglyph_handle;
+
+
+
+/*
+ * Create a new handle to configure anaglyph generation.
+ *
+ * @param width         The width of the screen.
+ * @param height        The height of the screen.
+ * @param drawSceneFunc The function that is responsible to draw the scene.
+ */
+extern 
+  anaglyph_handle *anaglyph_new_handle ( int width, int height,
+                     void (*drawSceneFunc) (void));
+
+/*
+ * Draw the scene.
+ * @param config An anaglyph handle that config the generation of the anaglyph
+ *                images.
+ */
+extern
+  void anaglyph_draw (anaglyph_handle *config);
+
+#endif
