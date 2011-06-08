@@ -35,12 +35,13 @@ Ihandle *mainDlg;           /* Main Window */
 Ihandle *controlsFrm;          /* Controls over canvas */
 Ihandle *canvas;            /* OpengGL canvas */
 
-
 anaglyph_handle *anaglyph;
 
 int width = 800, height = 600;
-int speed = 0;
+int speed = 1.0;
 GLdouble angle = 0.0;
+
+MODEL_TYPE modeltype;
 
 int exit_cb(void)
 {
@@ -55,12 +56,10 @@ void drawScene (void)
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glPushMatrix();  /* saves current model view in a stack */
-    //glTranslatef( 0.0f, 0.0f , 0.0f );
-    //glScalef( 1.0f, 1.0f, 1.0f );
+   // glTranslatef(0.0, 0.0, -3.0);
+    glScalef(0.7, 0.7, 0.7);
     glRotatef(angle, 0, 1, 0);
- // colorCube();
-    MakeBox();
-//    MakeSphere();
+    MakeModel(modeltype);
   glPopMatrix();
  
 }
@@ -104,14 +103,35 @@ int controls_close_cb(Ihandle *ih)
   return IUP_IGNORE;
 }
 
-/* Prevents the control window from being closed */
-int rendertype_valuechanged_cb(Ihandle *ih)
+/* Handle the user change the render type */
+int rendertype_valuechanged_cb(Ihandle *self, char *t, int i, int v)
 {
-  int type = IupGetInt(ih, IUP_VALUE);
-  if(type)
-    anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
-  else
-    anaglyph->anaglyph_method = ANAGLYPH_TOE_IN;
+//  printf ("Item %d - %s - %s\n", i, t, v == 0 ? "deselected" : "selected" );
+  if(v == 1){ //selected
+    switch (i)
+    {
+      case 1:
+        anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
+        break;
+      case 2:
+        anaglyph->anaglyph_method = ANAGLYPH_TOE_IN;
+        break;
+      default: 
+        anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
+        break;
+    }
+  }
+  return IUP_DEFAULT;
+}
+
+/* Handle the user change the geometry type */
+int geometrytype_valuechanged_cb(Ihandle *self, char *t, int i, int v)
+{
+  printf ("Item %d - %s - %s\n", i, t, v == 0 ? "deselected" : "selected" );
+  if(v == 1) //selected
+  {
+    modeltype = (MODEL_TYPE)i;
+  }
   return IUP_DEFAULT;
 }
 
@@ -144,58 +164,73 @@ int resize_cb(Ihandle *self, int new_width, int new_height)
   return IUP_DEFAULT; /* return to the IUP main loop */
 }
 
+/*
+ * Create the controls that user can use to change the scene.
+ */
 Ihandle *createFrmControls()
 {
-  Ihandle *frm, *vbox, *anag_toein, *anag_offaxis,
-          *renderTypeFrm,
-          *topbottom, *sidebyside, *renderType,
+  Ihandle *frm, *vbox,
+          *renderTypeList, *renderTypeFrm,
+          *geometryTypeList, *geometryTypeFrm,
           *iod_v,
           *rotating_control;
 
-  anag_offaxis = IupToggle ("&Anaglyph (offaxis)", ""),
-  anag_toein = IupToggle ("&Anaglyph (Toe-in)", ""),
-  topbottom = IupToggle ("&Top/Bottom", ""),
-  sidebyside = IupToggle ("&Side-by-side", ""),
-
-  renderType = IupRadio (
-    IupVbox (
-      anag_offaxis,
-      anag_toein,
-      topbottom,
-      sidebyside,
-      NULL
-    )
-  );
-
-  IupSetHandle("anaglyph_offaxis", anag_offaxis);
-  IupSetHandle("anaglyph_toein", anag_toein);
-  IupSetHandle("topbottom", topbottom);
-  IupSetHandle("sidebyside", sidebyside);
-
-  IupSetAttribute(renderType, "VALUE", "anaglyph_offaxis");
-  IupSetAttribute(anag_offaxis, "TIP",   "Two state button - Exclusive - RADIO");
-  IupSetAttribute(anag_toein, "TIP",   "Two state button - Exclusive - RADIO");
-  IupSetAttribute(topbottom, "TIP",   "Two state button - Exclusive - RADIO");
-  IupSetAttribute(sidebyside, "TIP",   "Two state button - Exclusive - RADIO");
-  IupSetCallback(anag_offaxis, "VALUECHANGED_CB", (Icallback)rendertype_valuechanged_cb);
-
-  renderTypeFrm = IupFrame( renderType );
-  IupSetAttribute (renderTypeFrm, "TITLE", "RenderType");
   
+  renderTypeList = IupList("render_type");
+
+  IupSetAttributes(renderTypeList, "1=\"Anaglyph (offaxis)\", \
+                                    2=\"Anaglyph (toe-in)\", \
+                                    3=\"Top/Bottom\", \
+                                    4=\"Side-by-side\", \
+                                    VISIBLEITEMS=4, \
+                                    EXPAND=\"HORIZONTAL\"");
+
+  IupSetCallback( renderTypeList, "ACTION", 
+                  (Icallback)rendertype_valuechanged_cb);
+
+
+  renderTypeFrm = IupFrame( renderTypeList );
+  IupSetAttribute (renderTypeFrm, "TITLE", "Render Type:");
+
+ 
+  geometryTypeList = IupList("geometry_type");
+  IupSetAttributes(geometryTypeList, "1=\"Mesh\", \
+                                    2=\"Sphere\", \
+                                    3=\"Box\", \
+                                    4=\"Box Color\", \
+                                    5=\"Pulsar\", \
+                                    6=\"Knot\", \
+                                    7=\"Tritoruz\", \
+                                    8=\"Lorenz\", \
+                                    VISIBLEITEMS=8, \
+                                    EXPAND=\"HORIZONTAL\"");
+
+  IupSetCallback( geometryTypeList, "ACTION", 
+                  (Icallback)geometrytype_valuechanged_cb);
+
+  geometryTypeFrm = IupFrame( geometryTypeList );
+  IupSetAttribute (geometryTypeFrm, "TITLE", "Geometry:");
+
+  /* Interocular distance */
   iod_v = IupVal("Horizontal");
   IupSetCallback(iod_v, "VALUECHANGED_CB",  (Icallback)iod_valuechanged_cb);
   IupSetAttribute(iod_v, "MIN", "-3.0");
   IupSetAttribute(iod_v, "MAX", "5.0");
   IupSetAttribute (iod_v, "VALUE", "0.5");
-
+  /* End interocular distance */
+  
   rotating_control = IupToggle("Rotating", "");
-  IupSetCallback(rotating_control, "VALUECHANGED_CB", (Icallback) rotating_valuechanged_cb);
+  IupSetCallback( rotating_control, "VALUECHANGED_CB", 
+                  (Icallback) rotating_valuechanged_cb);
   IupSetAttribute (rotating_control, "VALUE", "ON");
 
+  /* All together */
   vbox = IupVbox
   (
     IupFill(),
     renderTypeFrm,
+    IupFill(),
+    geometryTypeFrm,
     IupFill(),
     rotating_control,
     IupSetAttributes(IupHbox
@@ -213,6 +248,7 @@ Ihandle *createFrmControls()
   IupSetAttributes(frm, "TITLE=RGStereoPlayer Controls, \
                         MINBOX=NO, MAXBOX=NO");
 
+  /* Disable close button of the control dialog */
   IupSetCallback( frm, "CLOSE_CB", (Icallback) controls_close_cb);
 
   return frm;
@@ -241,7 +277,6 @@ int init(void)
   IupShowXY(controlsFrm, 0, 0); /* show mainDlg */
 
   hbox = IupHbox (
-//    controlsFrm,
     canvas,
     NULL
   );
@@ -253,7 +288,6 @@ int init(void)
   IupSetCallback (mainDlg, "CLOSE_CB", (Icallback) exit_cb);
   IupSetFunction (IUP_IDLE_ACTION, (Icallback) idle_cd); 
   
-//  IupShowXY(mainDlg, IUP_CENTER, IUP_CENTER); /* show mainDlg */
   IupShow(mainDlg); /* show mainDlg */
   
   return 1;
