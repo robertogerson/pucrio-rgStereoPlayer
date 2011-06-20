@@ -35,14 +35,16 @@ void anaglyph_draw_toein(const anaglyph_handle *config)
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   
-  glDrawBuffer(GL_BACK); /* draw into both back buffers */
+  glDrawBuffer(GL_BACK); /* draw into back buffer */
+  glReadBuffer(GL_BACK); /* read from back buffer */
   /* clear color and depth buffers*/
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_ACCUM_BUFFER_BIT);
 
-  glDrawBuffer(GL_BACK_LEFT); /* draw into back left buffer */
+//  glDrawBuffer(GL_BACK_LEFT); /* draw into back left buffer */
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity(); /* reset modelview matrix */
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
   gluLookAt(  (-1)*config->IOD/2, /* set camera position  x=-IOD/2 */
               0.0,            /*                      y=0.0 */
               0.0,            /*                      z=0.0 */
@@ -53,7 +55,7 @@ void anaglyph_draw_toein(const anaglyph_handle *config)
               1.0,            /*                      y=1.0 */
               0.0);           /*                      z=0.0 */
 
-  // TODO: This must be configurable
+  //TODO: This must be configurable
   glColorMask(GL_TRUE, GL_FALSE, GL_FALSE, GL_TRUE);
   glPushMatrix();
   {
@@ -61,11 +63,18 @@ void anaglyph_draw_toein(const anaglyph_handle *config)
     config->drawSceneFunc();
   }
   glPopMatrix();
+  glFlush();
+  // Remove the previous color mask.
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-  glDrawBuffer(GL_BACK_RIGHT);  /* draw into back right buffer */
+  /* Write over accumulation buffer */
+  glAccum(GL_ACCUM, 1.0);
+
+  glDrawBuffer(GL_BACK);  /* draw into back buffer */
+  glClear(GL_ACCUM_BUFFER_BIT);
+  
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();             /* reset modelview matrix */
-  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   gluLookAt( config->IOD/2,
              0.0,
              0.0,
@@ -84,6 +93,13 @@ void anaglyph_draw_toein(const anaglyph_handle *config)
     config->drawSceneFunc();
   }
   glPopMatrix();
+  glFlush();
+
+  // Remove the previous color mask.
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+  glAccum(GL_ADD, 1.0);
+  glAccum(GL_RETURN, 1.0);
 }
 
 void setFrustum (anaglyph_handle *config)
@@ -109,8 +125,11 @@ void setFrustum (anaglyph_handle *config)
 }
 
 void anaglyph_draw_offaxis(anaglyph_handle *config)
-{ 
+{
   setFrustum (config);  /* Just need call this when the viewport changes */
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
 
   glDrawBuffer(GL_BACK);  /* draw into both back buffers */
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); /* clear color and depth buffers */
@@ -161,6 +180,9 @@ void anaglyph_draw_offaxis(anaglyph_handle *config)
     config->drawSceneFunc();
   }
   glPopMatrix();
+
+  // Remove the previous color mask.
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 void anaglyph_draw (anaglyph_handle *config)

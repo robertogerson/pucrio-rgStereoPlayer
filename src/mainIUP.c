@@ -171,6 +171,7 @@ Ihandle *createFrmControls()
 {
   Ihandle *frm, *vbox,
           *renderTypeList, *renderTypeFrm,
+          *anaglyphMethodList, *anaglyphMethodFrm,
           *geometryTypeList, *geometryTypeFrm,
           *iod_v,
           *rotating_control;
@@ -180,11 +181,15 @@ Ihandle *createFrmControls()
 
   IupSetAttributes(renderTypeList, "1=\"Anaglyph (offaxis)\", \
                                     2=\"Anaglyph (toe-in)\", \
+                                    VISIBLEITEMS=4, \
+                                    EXPAND=\"HORIZONTAL\""); 
+
+/*  IupSetAttributes(renderTypeList, "1=\"Anaglyph (offaxis)\", \
+                                    2=\"Anaglyph (toe-in)\", \
                                     3=\"Top/Bottom\", \
                                     4=\"Side-by-side\", \
                                     VISIBLEITEMS=4, \
-                                    EXPAND=\"HORIZONTAL\"");
-
+                                    EXPAND=\"HORIZONTAL\""); */
   IupSetCallback( renderTypeList, "ACTION", 
                   (Icallback)rendertype_valuechanged_cb);
 
@@ -192,6 +197,17 @@ Ihandle *createFrmControls()
   renderTypeFrm = IupFrame( renderTypeList );
   IupSetAttribute (renderTypeFrm, "TITLE", "Render Type:");
 
+  anaglyphMethodList = IupList("anaglyph_method");
+  IupSetAttributes(anaglyphMethodList,  "1=\"True Anaglyphs\",\
+                                     2=\"Gray Anaglyphs\", \
+                                     3=\"Color Anaglyphs\", \
+                                     4=\"Half Color Anaglyphs\", \
+                                     5=\"Optimized Anaglyphs\", \
+                                     VISIBLEITEMS=6, \
+                                     EXPAND=\"HORIZONTAL\"");
+
+  anaglyphMethodFrm = IupFrame( anaglyphMethodList );
+  IupSetAttribute (anaglyphMethodFrm, "TITLE", "Anglyph Method:");
  
   geometryTypeList = IupList("geometry_type");
   IupSetAttributes(geometryTypeList, "1=\"Mesh\", \
@@ -231,6 +247,8 @@ Ihandle *createFrmControls()
     renderTypeFrm,
     IupFill(),
     geometryTypeFrm,
+    IupFill(),
+    anaglyphMethodFrm,
     IupFill(),
     rotating_control,
     IupSetAttributes(IupHbox
