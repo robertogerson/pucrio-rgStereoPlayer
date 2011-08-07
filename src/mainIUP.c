@@ -37,7 +37,7 @@ Ihandle *canvas;            /* OpengGL canvas */
 
 anaglyph_handle *anaglyph;
 
-int width = 800, height = 600;
+int width = 810, height = 610;
 int speed = 1.0;
 GLdouble angle = 0.0;
 
@@ -68,22 +68,29 @@ void drawScene (void)
 int iod_valuechanged_cb(Ihandle *ih)
 {
   anaglyph->IOD =  IupGetFloat(ih, IUP_VALUE);
+
+  return IUP_DEFAULT;
 }
 
 /* Callback called when the user wants to stop/start the rotation */
 int rotating_valuechanged_cb(Ihandle *ih)
 {
   speed = IupGetInt(ih, IUP_VALUE);
+
+  return IUP_DEFAULT;
 }
 
 /* Callback to repaint the canvas */
 int repaint_cb(Ihandle *self)
 {
   IupGLMakeCurrent(self); /* Make self the current GL Context */
- 
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  /* White */
+
+  /* Should be in another place (it is need only in the begining*/
+  glEnable(GL_DEPTH_TEST); 
+
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  /* Black */
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
+
   anaglyph_draw(anaglyph);
 
   IupGLSwapBuffers(self);  /* change the back buffer with the front buffer */
@@ -111,13 +118,19 @@ int rendertype_valuechanged_cb(Ihandle *self, char *t, int i, int v)
     switch (i)
     {
       case 1:
-        anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
+        anaglyph->stereo_method = STEREO_OFF_AXIS;
         break;
       case 2:
-        anaglyph->anaglyph_method = ANAGLYPH_TOE_IN;
+        anaglyph->stereo_method = STEREO_OFF_AXIS_COLOR;
+        break;
+      case 3:
+        anaglyph->stereo_method = STEREO_TOE_IN;
+        break;
+      case 4:
+        anaglyph->stereo_method = STEREO_TOE_IN_COLOR;
         break;
       default: 
-        anaglyph->anaglyph_method = ANAGLYPH_OFF_AXIS;
+        anaglyph->stereo_method = STEREO_OFF_AXIS;
         break;
     }
   }
@@ -130,7 +143,18 @@ int geometrytype_valuechanged_cb(Ihandle *self, char *t, int i, int v)
   printf ("Item %d - %s - %s\n", i, t, v == 0 ? "deselected" : "selected" );
   if(v == 1) //selected
   {
-    modeltype = (MODEL_TYPE)i;
+    modeltype = (MODEL_TYPE)(i);
+  }
+  return IUP_DEFAULT;
+}
+
+/* Handle the user changing the anaglyph method */
+int anaglyphmethod_valuechanged_cb(Ihandle *self, char *t, int i, int v)
+{
+  printf ("Item %d - %s - %s\n", i, t, v == 0 ? "deselected" : "selected" );
+  if(v == 1) //selected
+  {
+    anaglyph->anaglyph_method = (ANAGLYPH_METHOD) (i-1);
   }
   return IUP_DEFAULT;
 }
@@ -159,6 +183,9 @@ int resize_cb(Ihandle *self, int new_width, int new_height)
   /* update canvas size and repaint */
   width = new_width;
   height = new_height;
+ 
+  anaglyph_set_size(anaglyph, new_width, new_height);
+  
   repaint_cb(canvas);
 
   return IUP_DEFAULT; /* return to the IUP main loop */
@@ -180,7 +207,9 @@ Ihandle *createFrmControls()
   renderTypeList = IupList("render_type");
 
   IupSetAttributes(renderTypeList, "1=\"Anaglyph (offaxis)\", \
-                                    2=\"Anaglyph (toe-in)\", \
+                                    2=\"Anaglyph (offaxis with color)\", \
+                                    3=\"Anaglyph (toe-in)\", \
+                                    4=\"Anaglyph (toe-in with color)\", \
                                     VISIBLEITEMS=4, \
                                     EXPAND=\"HORIZONTAL\""); 
 
@@ -206,19 +235,23 @@ Ihandle *createFrmControls()
                                      VISIBLEITEMS=6, \
                                      EXPAND=\"HORIZONTAL\"");
 
+  IupSetCallback( anaglyphMethodList, "ACTION", 
+                  (Icallback)anaglyphmethod_valuechanged_cb);
+
   anaglyphMethodFrm = IupFrame( anaglyphMethodList );
   IupSetAttribute (anaglyphMethodFrm, "TITLE", "Anglyph Method:");
- 
+
   geometryTypeList = IupList("geometry_type");
   IupSetAttributes(geometryTypeList, "1=\"Mesh\", \
                                     2=\"Sphere\", \
                                     3=\"Box\", \
-                                    4=\"Box Color\", \
-                                    5=\"Pulsar\", \
-                                    6=\"Knot\", \
-                                    7=\"Tritoruz\", \
-                                    8=\"Lorenz\", \
-                                    VISIBLEITEMS=8, \
+                                    4=\"Pulsar\", \
+                                    5=\"Knot\", \
+                                    6=\"Tritoruz\", \
+                                    7=\"Lorenz\", \
+                                    8=\"Box Color\", \
+                                    9=\"RGB Cube\", \
+                                    VISIBLEITEMS=9, \
                                     EXPAND=\"HORIZONTAL\"");
 
   IupSetCallback( geometryTypeList, "ACTION", 
@@ -282,13 +315,16 @@ int init(void)
   canvas = IupGLCanvas("repaint_cb"); /* Create Main Canvas */
   IupSetFunction("repaint_cb", (Icallback) repaint_cb);
   /* define the canvas' size in pixels */
-  IupSetAttribute (canvas, IUP_RASTERSIZE, "800x600");
-  
+  IupSetAttribute (canvas, IUP_RASTERSIZE, "800x600"); 
   /* define that this OpenGL _canvas has double buffer (front and back) */
   IupSetAttribute(canvas,IUP_BUFFER,IUP_DOUBLE);
-
+  /* Enable depth */
+  IupSetAttribute(canvas, "DEPTH_SIZE", "1.0");
   /* bind callback actions with callback functions */
   IupSetCallback(canvas, "RESIZE_CB",(Icallback) resize_cb);
+
+  IupGLMakeCurrent(canvas);
+
 
   controlsFrm = createFrmControls();
 /*  IupSetAttribute (controlsFrm, "OPACITY", "140"); */

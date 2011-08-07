@@ -15,9 +15,6 @@ void MakeModel(MODEL_TYPE modeltype)
     case BOX:
       MakeBox();
       break;
-    case BOXCOLOR:
-      colorCube();
-      break;
     case SPHERE:
       MakeSphere();
       break;
@@ -32,6 +29,12 @@ void MakeModel(MODEL_TYPE modeltype)
       break;
     case LORENZ:
       MakeLorenz();
+      break;
+    case BOXCOLOR:
+      colorCube();
+      break;
+    case RGBCUBE:
+      MakeRGBCube();
       break;
     default:
       MakeBox();
@@ -53,6 +56,7 @@ void polygon(int a, int b, int c, int d)
 
 void colorCube(void)
 {
+  glScalef(2.0f, 2.0f, 2.f);
   glColor3f(1,0,0);
   glNormal3f(1,0,0);
   polygon(2,3,7,6);
@@ -462,4 +466,67 @@ XYZ CalcNormal(XYZ p,XYZ p1,XYZ p2)
    return(n);
 }
 
+typedef struct _color3D
+{
+  double r;
+  double g;
+  double b;
+} color3D;
+
+static void add_color_vertex(const color3D* c)
+{
+  glColor3d(c->r, c->g, c->b);
+  glVertex3d(c->r, c->g, c->b);
+}
+
+static void draw_cube_face(const color3D* c1, const color3D* c2, const color3D* c3, const color3D* c4)
+{
+  color3D cm;
+  cm.r = (c1->r + c2->r + c3->r + c4->r)/4;
+  cm.g = (c1->g + c2->g + c3->g + c4->g)/4;
+  cm.b = (c1->b + c2->b + c3->b + c4->b)/4;
+
+  add_color_vertex(&cm);
+  add_color_vertex(c1);
+  add_color_vertex(c2);
+
+  add_color_vertex(&cm);
+  add_color_vertex(c2);
+  add_color_vertex(c3);
+
+  add_color_vertex(&cm);
+  add_color_vertex(c3);
+  add_color_vertex(c4);
+
+  add_color_vertex(&cm);
+  add_color_vertex(c4);
+  add_color_vertex(c1);
+}
+
+const color3D c3D_black = {0.0, 0.0, 0.0};
+const color3D c3D_red = {1.0, 0.0, 0.0};
+const color3D c3D_green = {0.0, 1.0, 0.0};
+const color3D c3D_blue = {0.0, 0.0, 1.0};
+const color3D c3D_cian = {0.0, 1.0, 1.0};
+const color3D c3D_magenta = {1.0, 0.0, 1.0};
+const color3D c3D_yellow = {1.0, 1.0, 0.0};
+const color3D c3D_white = {1.0, 1.0, 1.0};
+
+void MakeRGBCube(void)
+{
+  glScalef(4.0f, 4.0f, 4.0f);
+  glTranslatef(-0.5, -0.5, -0.5);
+  glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glBegin(GL_TRIANGLES);
+
+  draw_cube_face(&c3D_black, &c3D_blue, &c3D_magenta, &c3D_red);
+  draw_cube_face(&c3D_black, &c3D_green, &c3D_cian, &c3D_blue);
+  draw_cube_face(&c3D_black, &c3D_red, &c3D_yellow, &c3D_green);
+  draw_cube_face(&c3D_white, &c3D_cian, &c3D_blue, &c3D_magenta);
+  draw_cube_face(&c3D_white, &c3D_cian, &c3D_green, &c3D_yellow);
+  draw_cube_face(&c3D_white, &c3D_magenta, &c3D_red, &c3D_yellow);
+
+  glEnd();
+}
 

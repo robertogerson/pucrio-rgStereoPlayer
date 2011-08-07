@@ -28,11 +28,12 @@ enum MODEL_TYPE
 	MESH = 1,
 	SPHERE,
 	BOX,
-	BOXCOLOR,
 	PULSAR,
 	KNOT,
 	TRITORUS,
 	LORENZ,
+	BOXCOLOR,
+  RGBCUBE,
 	NONE
 };
 
@@ -53,6 +54,8 @@ XYZ  TriTorusEval(double,double);
 
 extern void polygon (int a, int b, int c, int d);
 extern void colorCube (void);
+
+void MakeRGBCube(void);
 
 /* Util */
 void Normalise(XYZ *);

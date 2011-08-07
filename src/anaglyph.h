@@ -18,9 +18,23 @@
 
 #define DTR 0.0174532925
 
-enum ANAGLYPH_METHOD {
-  ANAGLYPH_TOE_IN = 0, /* Enable the anaglyph toe-in projection method. */
-  ANAGLYPH_OFF_AXIS    /* Enabe the anaglyph Off-axis projection  method.*/
+static unsigned char *left_eye, *right_eye, *merged_image;
+
+enum STEREO_METHOD
+{
+  STEREO_TOE_IN = 0, /* Enable the anaglyph toe-in projection method. */
+  STEREO_TOE_IN_COLOR, /* Enable the anaglyph toe-in with color projection method. */
+  STEREO_OFF_AXIS,    /* Enabe the anaglyph Off-axis projection  method.*/
+  STEREO_OFF_AXIS_COLOR    /* Enabe the anaglyph Off-axis with color projection  method.*/
+};
+
+enum ANAGLYPH_METHOD
+{
+  ANAGLYPH_TRUE = 0,
+  ANAGLYPH_GRAY,
+  ANAGLYPH_COLOR,
+  ANAGLYPH_HALF_COLOR,
+  ANAGLYPH_OPTIMIZED
 };
 
 typedef struct
@@ -46,6 +60,8 @@ typedef struct
   double screen_height;
 
   void (*drawSceneFunc) (void);
+  
+  STEREO_METHOD stereo_method;
   ANAGLYPH_METHOD anaglyph_method;
 
   camera leftCam, rightCam;
@@ -71,5 +87,15 @@ extern
  */
 extern
   void anaglyph_draw (anaglyph_handle *config);
+
+/*
+ * Set the size of the scene.
+ * @param config An anaglyph handle that config the generation of the anaglyph
+ *                images.
+ * @param width the new width of the scene.
+ * @param height the new height of the scene.
+ */
+extern
+  void anaglyph_set_size(anaglyph_handle *config, int width, int height);
 
 #endif
